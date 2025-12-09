@@ -1,0 +1,108 @@
+@startuml Система управления автопарком - Диаграмма контейнеров
+!includeurl lib/C4_Container.puml
+
+title Система управления автопарком - Диаграмма контейнеров
+
+Person(диспетчер, "Диспетчер", "Планирует маршруты, управляет расписанием, мониторит автомобили")
+Person(водитель, "Водитель", "Выполняет маршруты, взаимодействует с мобильным приложением, сообщает об инцидентах")
+Person(тех_персонал, "Технический персонал", "Управляет техническим обслуживанием автомобилей")
+Person(администратор, "Администратор", "Управляет доступом, настройками системы, формирует отчеты")
+
+System_Boundary(c1, "Система управления автопарком") {
+    Container(admin_panel, "Панель администратора", "Модуль веб приложения")
+    Container(manager_panel, "Панель диспетчера", "Модуль веб приложения")
+    Container(technical_panel, "Панель тех персонала", "Модуль веб приложения")
+    Container(driver_app, "Мобильное приложение для водителей", "Модуль нативного веб приложения")
+
+    Container(web_app, "Нативное веб-приложение", "React TS Native", "SPA приложение")
+
+    Container(envoy_gateway, "API Gateway", "Envoy", "Маршрутизация, аутентификация, мониторинг")
+
+    Container(authentication_service, "Authentication Service", "Go", "Установка подлинности пользователя, управление сессиями")
+
+	Container(account_service, "Сервис аккаунта всей компании", "Go", "Конфигурация конкретной компании, отвечает за subscription")
+
+	Container(user_service, "Сервис пользователей", "Go", "Отвечает за хранение пользователей")
+
+	Container(car_service, "Сервис автомобилей", "Go", "Отвечает за хранение автомобилей")
+
+	Container(routing_service, "Сервис маршрутов", "Go", "Планирование и оптимизация маршрутов")
+
+	Container(scheduling_service, "Сервис расписаний", "Go", "Управление расписанием и задачами водителей")
+
+	Container(notifications_service, "Сервис уведомлений", "Go", "Отправка уведомлений")
+
+	Container(maintenance_service, "Сервис ТО", "Go", "Управление техническим обслуживанием")
+
+	Container(reports_service, "Сервис отчетов", "Go", "Генерация отчетов")
+
+    Container(centrifugo, "Centrifugo", "Go", "realtime сервис для WebSocket")
+
+    Container(message_broker, "RabbitMQ", "", "Брокер сообщений")
+
+	Container(redis_service, "Redis", "", "In-memory хранение данных")
+
+	Container(db_postgres, "PostgreSQL", "", "Хранение данных")
+}
+
+System_Ext(gibdd, "ГИБДД", "Проверка водительских удостоверений и VIN-номеров")
+
+System_Ext(gps_provider, "GPS-трекеры", "Получение GPS-данных")
+
+диспетчер --> manager_panel : "Планирование маршрутов, просмотр инцидентов"
+администратор --> admin_panel : "Управление настройками"
+водитель --> driver_app : "Просмотр маршрутов"
+тех_персонал --> technical_panel : "Управление техобслуживанием"
+
+manager_panel --> web_app : "HTTP"
+admin_panel --> web_app : "HTTP"
+technical_panel --> web_app : "HTTP"
+driver_app --> web_app : "HTTP"
+driver_app --> gps_provider
+web_app --> envoy_gateway : "HTTP"
+
+envoy_gateway --> authentication_service : "HTTP Аутентификация пользователя"
+envoy_gateway --> account_service : "HTTP Регистрация новой компании, управление глобальными настройками"
+envoy_gateway --> user_service : "HTTP Управление пользователями компании"
+envoy_gateway --> car_service : "HTTP Управление автомобилями компании"
+envoy_gateway --> routing_service : "HTTP Управление маршрутами"
+envoy_gateway --> scheduling_service : "HTTP Управление расписанием"
+envoy_gateway --> notifications_service : "HTTP"
+envoy_gateway --> maintenance_service : "HTTP Управление ТО"
+envoy_gateway --> reports_service : "HTTP Получение отчётов"
+envoy_gateway --> web_app : "WS Проксирование centrifugo"
+
+authentication_service --> redis_service : "Хранение сессии пользователя"
+
+account_service --> db_postgres : "Чтение/запись конфигураций"
+
+user_service --> db_postgres : "Чтение/запись пользователей"
+user_service --> gibdd : "Проверка водительского удостоверения"
+user_service --> message_broker : "Publish: UserCreated/UserUpdated/UserDeleted"
+
+car_service --> db_postgres : "Чтение/запись автомобилей"
+car_service --> gibdd : "HTTP: Проверка vin номера"
+car_service --> message_broker : "Publish: CarCreated/UserDeleted"
+
+routing_service --> car_service : "gRPC: Получение данных о транспорте"
+routing_service --> db_postgres : "Информация о маршрутах. Положение автомобиля"
+routing_service --> message_broker : "Publish RouteCreated"
+
+scheduling_service --> user_service : "gRPC: Получение данных о пользователях"
+scheduling_service --> routing_service : "gRPC: Получение оптимизированных маршрутов"
+scheduling_service --> notifications_service : "SсheduleUpdated"
+scheduling_service --> message_broker : "Publish SсheduleUpdated"
+message_broker --> scheduling_service : "Consume RouteCreated"
+
+notifications_service --> centrifugo : "Отправка уведомлений"
+message_broker --> notifications_service : "Consume MaintenanceNotify"
+
+maintenance_service --> db_postgres : "Хранит, прошёл ли автомобиль ТО"
+maintenance_service --> message_broker : "Publish MaintenanceNotify"
+
+reports_service --> db_postgres : "Хранит view таблицы из других сервисов"
+reports_service --> message_broker : "Consume события для модификации view таблиц"
+
+centrifugo --> envoy_gateway : "WebSocket реалтайм уведомления"
+
+@enduml

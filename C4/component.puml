@@ -1,0 +1,57 @@
+@startuml
+!include lib/C4_Component.puml
+
+title Schedule Service - Диаграмма компонентов
+
+Container(schedule_service_container, "Schedule Service", "Go", "Микросервис для расписания водителей")
+
+System_Boundary(schedule_service_boundary, "Schedule Service") {
+    Component(api_handler, "API Handler", "HTTP", "Обрабатывает REST API")
+
+    Component(schedule_service, "Schedule Service", "Go", "Основная бизнес-логика и координация")
+
+    Component(schedule_repository, "Schedule Repository", "", "Управление расписанием")
+    Component(task_repository, "Task Repository", "", "Управление задачами")
+
+    Component(user_adapter, "User Adapter", "Go gRPC Client", "Адаптер для вызовов User Service")
+    Component(routing_adapter, "Routing Adapter", "Go gRPC Client", "Адаптер для вызовов Routing Service")
+
+    Component(dispatcher, "Dispatcher", "Go", "Отправка событий в Outbox таблицу")
+    Component(outbox_reader, "Outbox Reader", "Go", "Чтение событий из Outbox и отправка в RabbitMQ")
+    Component(event_handler, "EventHandler", "Go", "Обработчик входящих событий из RabbitMQ")
+
+    Component(notifications_service_adapter, "Notifications Adapter", "Go HTTP Client", "Адаптер для сервиса уведомлений")
+}
+
+ContainerDb(db_postgres, "PostgresSQL", "SQL Database", "Хранилище утвержденного расписания, задач пользователей, таблицы для outbox")
+Container(rabbitmq, "RabbitMQ", "", "Брокер сообщений")
+Container(user_service, "User Service", "Go", "Микросервис пользователей")
+Container(routing_service, "Routing Service", "Go", "Микросервис маршрутов")
+Container(notifications_service, "Notifications Service", "Go", "Микросервис уведомлений")
+
+Rel(user_adapter, user_service, "", "GRPC")
+Rel(routing_adapter, routing_service, "", "GRPC")
+Rel(notifications_service_adapter, notifications_service, "", "GRPC")
+
+Rel(schedule_service, schedule_repository, "Управление расписанием", "Go calls")
+Rel(schedule_service, task_repository, "Управление задачами", "Go calls")
+Rel(schedule_service, notifications_service_adapter, "Отправка уведомлений", "Go calls")
+Rel(schedule_service, routing_adapter, "Получение доступных пользователям маршрутов", "Go calls")
+Rel(schedule_service, user_adapter, "Получение доступных пользователей", "Go calls")
+Rel(schedule_service, dispatcher, "Отправка событий в outbox", "Go calls")
+
+Rel(api_handler, schedule_service, "Вызывает операции расписания", "Go calls")
+
+Rel(schedule_repository, db_postgres, "Чтение/запись пользовательского расписания", "SQL")
+Rel(task_repository, db_postgres, "Чтение/запись задачи пользователя", "SQL")
+
+Rel(dispatcher, db_postgres, "Сохраняет события в outbox", "SQL")
+
+Rel(outbox_reader, db_postgres, "Читает события из outbox", "SQL")
+Rel(outbox_reader, rabbitmq, "Отправляет события в RabbitMQ", "AMQP")
+
+Rel(rabbitmq, event_handler, "Получает события из RabbitMQ", "AMQP")
+Rel(event_handler, schedule_service, "Вызывает обработку событий", "Go calls")
+Rel(event_handler, notifications_service_adapter, "Отправка уведомлений", "Go calls")
+
+@enduml
