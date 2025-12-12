@@ -1,0 +1,194 @@
+@startuml
+state "ФормаАвторизации" as login
+state "ДашбордАдминистратора" as admin_dashboard
+state "ДашбордДиспетчера" as dispatcher_dashboard
+state "ДашбордВодителя" as driver_dashboard
+state "ДашбордТехПерсонала" as tech_dashboard
+
+' Состояния администратора
+state "УправлениеПользователями" as user_management
+state "СписокПользователей" as user_list
+state "РегистрацияПользователя" as user_registration
+state "ВводДанныхПользователя" as input_user_data
+state "ПроверкаВодительскихДанных" as check_driver_license
+state "ОшибкаРегистрации" as registration_error
+state "РедактированиеПользователя" as edit_user
+state "УдалениеПользователя" as delete_user
+state "ПодтверждениеУдаления" as confirm_deletion
+state "ВыгрузкаОтчетов" as export_reports
+state "ВыборТипаОтчета" as select_report
+state "ФормированиеОтчета" as generate_report
+state "УправлениеНастройкамиАккаунта" as account_settings
+
+' Состояния диспетчера
+state "УправлениеЗадачами" as task_management
+state "СписокЗадач" as task_list
+state "СозданиеЗадачи" as create_task
+state "РедактированиеЗадачи" as edit_task
+state "НазначениеЗадачиВодителю" as assign_task
+state "ПросмотрЗадачи" as view_task
+state "УправлениеМаршрутами" as route_management
+state "СозданиеМаршрута" as create_route
+state "ОптимизацияМаршрута" as optimize_route
+state "НазначениеМаршрута" as assign_route
+state "УправлениеРасписанием" as schedule_management
+state "СозданиеРасписания" as create_schedule
+state "РедактированиеРасписания" as edit_schedule
+state "ЗакреплениеАвтомобиля" as assign_vehicle
+state "ПросмотрКарты" as view_map
+
+' Состояния водителя
+state "МоиЗадачи" as my_tasks
+state "ПросмотрЗадач" as view_my_tasks
+state "ПриступаниеКЗадаче" as start_task
+state "ВыполнениеЗадачи" as execute_task
+state "ЗавершениеЗадачи" as complete_task
+state "СообщениеОбИнциденте" as report_incident
+state "МоеРасписание" as my_schedule
+state "ПросмотрРасписания" as view_schedule
+state "МаршрутНаКарте" as view_route_on_map
+state "ДобавлениеАвтомобиля" as add_vehicle
+state "ВводДанныхАвтомобиля" as input_vehicle_data
+state "ПроверкаVIN" as check_vin
+state "ОшибкаДобавленияАвто" as vehicle_error
+state "СтатусАвтомобиля" as vehicle_status
+
+' Состояния тех. персонала
+state "ТехническоеОбслуживание" as maintenance
+state "СписокАвтомобилейТО" as maintenance_list
+state "ПланированиеТО" as plan_maintenance
+state "СозданиеЗаявкиТО" as create_maintenance_request
+state "ВыполнениеТО" as perform_maintenance
+state "ОтметкаОВыполнении" as mark_completed
+state "СписаниеАвтомобиля" as write_off_vehicle
+state "ПричинаСписания" as write_off_reason
+state "ПодтверждениеСписания" as confirm_write_off
+state "ИсторияОбслуживания" as maintenance_history
+
+' Базовые переходы от авторизации
+[*] --> login
+login --> admin_dashboard : Администратор\nуспешная авторизация
+login --> dispatcher_dashboard : Диспетчер\nуспешная авторизация
+login --> driver_dashboard : Водитель\nуспешная авторизация
+login --> tech_dashboard : Тех. персонал\nуспешная авторизация
+
+' Переходы администратора
+admin_dashboard --> user_management : Нажал "Управление пользователями"
+admin_dashboard --> export_reports : Нажал "Отчеты"
+admin_dashboard --> account_settings : Нажал "Настройки"
+
+user_management --> user_list : Получает список пользователей
+user_list --> user_registration : Нажал "Добавить пользователя"
+user_list --> edit_user : Выбрал пользователя → "Редактировать"
+user_list --> delete_user : Выбрал пользователя → "Удалить"
+
+user_registration --> input_user_data : Начало регистрации
+input_user_data --> check_driver_license : Роль = Водитель
+check_driver_license --> registration_error : ВУ просрочено
+check_driver_license --> user_list : ВУ валидно, пользователь создан
+input_user_data --> user_list : Роль != Водитель, пользователь создан
+
+delete_user --> confirm_deletion : Подтверждение удаления
+confirm_deletion --> user_list : Пользователь удален\n(связанные данные очищены)
+
+export_reports --> select_report : Выбор типа отчета
+select_report --> generate_report : Нажал "Сформировать"
+generate_report --> export_reports : Отчет готов
+
+account_settings --> admin_dashboard : Настройки сохранены
+
+' Переходы диспетчера
+dispatcher_dashboard --> task_management : Нажал "Задачи"
+dispatcher_dashboard --> route_management : Нажал "Маршруты"
+dispatcher_dashboard --> schedule_management : Нажал "Расписание"
+dispatcher_dashboard --> view_map : Нажал "Карта"
+
+task_management --> task_list : Автоматический переход
+task_list --> create_task : Нажал "Создать задачу"
+task_list --> edit_task : Выбрал задачу → "Редактировать"
+task_list --> assign_task : Выбрал задачу → "Назначить"
+task_list --> view_task : Выбрал задачу → "Просмотреть"
+
+create_task --> task_list : Задача создана
+edit_task --> task_list : Изменения сохранены
+assign_task --> task_list : Задача назначена
+view_task --> task_list : Нажал "Назад"
+
+route_management --> create_route : Нажал "Создать маршрут"
+create_route --> optimize_route : Введены точки маршрута
+optimize_route --> assign_route : Маршрут оптимизирован
+assign_route --> route_management : Маршрут назначен
+
+schedule_management --> create_schedule : Нажал "Создать расписание"
+create_schedule --> edit_schedule : Базовое расписание создано
+edit_schedule --> assign_vehicle : Расписание настроено
+assign_vehicle --> schedule_management : Автомобиль закреплен
+
+view_map --> dispatcher_dashboard : Нажал "Назад"
+
+' Переходы водителя
+driver_dashboard --> my_tasks : Нажал "Мои задачи"
+driver_dashboard --> my_schedule : Нажал "Мое расписание"
+driver_dashboard --> add_vehicle : Нажал "Добавить авто"
+driver_dashboard --> view_route_on_map : Нажал "Текущий маршрут"
+
+my_tasks --> view_my_tasks : Автоматический переход
+view_my_tasks --> start_task : Выбрал задачу → "Начать"
+view_my_tasks --> report_incident : Нажал "Сообщить об инциденте"
+
+start_task --> execute_task : Задача начата
+execute_task --> complete_task : Нажал "Завершить"
+complete_task --> view_my_tasks : Задача завершена
+report_incident --> view_my_tasks : Инцидент зарегистрирован
+
+my_schedule --> view_schedule : Автоматический переход
+view_schedule --> driver_dashboard : Нажал "Назад"
+
+add_vehicle --> input_vehicle_data : Начало добавления
+input_vehicle_data --> check_vin : Введены данные авто
+check_vin --> vehicle_error : VIN не прошел проверку
+check_vin --> vehicle_status : VIN валиден, авто добавлено
+vehicle_status --> driver_dashboard : Нажал "Готово"
+vehicle_error --> add_vehicle : Нажал "Повторить"
+
+view_route_on_map --> driver_dashboard : Нажал "Назад"
+
+' Переходы тех. персонала
+tech_dashboard --> maintenance : Нажал "Тех. обслуживание"
+tech_dashboard --> write_off_vehicle : Нажал "Списание авто"
+
+maintenance --> maintenance_list : Автоматический переход
+maintenance_list --> plan_maintenance : Нажал "Запланировать ТО"
+plan_maintenance --> create_maintenance_request : Выбрал авто и дату
+create_maintenance_request --> perform_maintenance : Заявка создана
+perform_maintenance --> mark_completed : ТО выполнено
+mark_completed --> maintenance_list : Отмечено как выполненное
+maintenance_list --> maintenance_history : Нажал "История"
+maintenance_history --> maintenance_list : Нажал "Назад"
+
+write_off_vehicle --> write_off_reason : Выбор автомобиля
+write_off_reason --> confirm_write_off : Указана причина
+confirm_write_off --> tech_dashboard : Автомобиль списан\n(не подлежит починке)
+
+' Общие переходы возврата
+user_management --> admin_dashboard : Нажал "Назад"
+export_reports --> admin_dashboard : Нажал "Назад"
+account_settings --> admin_dashboard : Нажал "Назад"
+
+task_management --> dispatcher_dashboard : Нажал "Назад"
+route_management --> dispatcher_dashboard : Нажал "Назад"
+schedule_management --> dispatcher_dashboard : Нажал "Назад"
+
+my_tasks --> driver_dashboard : Нажал "Назад"
+my_schedule --> driver_dashboard : Нажал "Назад"
+add_vehicle --> driver_dashboard : Нажал "Отмена"
+
+maintenance --> tech_dashboard : Нажал "Назад"
+write_off_vehicle --> tech_dashboard : Нажал "Отмена"
+
+' Возврат на дашборд при разлогине
+admin_dashboard --> login : Выход из системы
+dispatcher_dashboard --> login : Выход из системы
+driver_dashboard --> login : Выход из системы
+tech_dashboard --> login : Выход из системы
+@enduml
