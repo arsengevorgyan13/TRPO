@@ -1,13 +1,13 @@
 @startuml Диаграмма состояний
 top to bottom direction
 hide empty description
-skinparam nodesep 65
+skinparam nodesep 70
 
 state "Форма авторизации" as login
 state "Дашборд администратора" as admin_dashboard
 state "Дашборд диспетчера" as dispatcher_dashboard
 state "Дашборд водителя" as driver_dashboard
-state "Дашборд тех. Персонала" as tech_dashboard
+state "Дашборд тех. персонала" as tech_dashboard
 
 ' Состояния администратора
 state "Управление пользователями" as user_management
@@ -16,7 +16,7 @@ state "Ввод данных пользователя" as input_user_data
 state "Проверка водительских данных" as check_driver_license
 state "Редактирование пользователя" as edit_user
 state "Удаление пользователя" as delete_user
-state "Подтверждение удаления" as confirm_deletion
+' state "Подтверждение удаления" as confirm_deletion
 state "Выгрузка отчетов" as export_reports
 state "Выбор типа отчета" as select_report
 state "Формирование отчета" as generate_report
@@ -30,7 +30,6 @@ state "Назначение задачи водителю" as assign_task
 state "Просмотр задачи" as view_task
 state "Управление маршрутами" as route_management
 state "Создание маршрута" as create_route
-state "Оптимизация маршрута" as optimize_route
 state "Назначение маршрута" as assign_route
 state "Управление расписанием" as schedule_management
 state "Создание расписания" as create_schedule
@@ -40,8 +39,7 @@ state "Просмотр карты" as view_map
 
 ' Состояния водителя
 state "Мои задачи" as my_tasks
-state "Просмотр задач" as view_my_tasks
-state "Приступание к задаче" as start_task
+state "Начало выполнения задаче" as start_task
 state "Выполнение задачи" as execute_task
 state "Завершение задачи" as complete_task
 state "Сообщение об инциденте" as report_incident
@@ -56,7 +54,6 @@ state "Статус автомобиля" as vehicle_status
 
 ' Состояния тех. персонала
 state "Техническое обслуживание" as maintenance
-state "Список автомобилей ТО" as maintenance_list
 state "Планирование ТО" as plan_maintenance
 state "Создание заявки ТО" as create_maintenance_request
 state "Выполнение ТО" as perform_maintenance
@@ -83,20 +80,16 @@ user_management --> edit_user : Выбрал пользователя → "Ре�
 user_management --> delete_user : Выбрал пользователя → "Удалить"
 
 edit_user --> input_user_data : Редактирование данных пользователя
-edit_user --> user_management : Нажал "Назад"
 
 user_registration --> input_user_data : Начало регистрации
 input_user_data --> check_driver_license : Роль = Водитель
-input_user_data --> user_management : Нажал "Назад"
 check_driver_license --> input_user_data : ВУ просрочено
 check_driver_license --> user_management : ВУ валидно, пользователь создан
 input_user_data --> user_management : Роль != Водитель, пользователь создан
 
 delete_user --> user_management : Подтверждение удаления
-delete_user --> user_management : Нажал "Назад"
 
 export_reports --> select_report : Выбор типа отчета
-select_report --> export_reports : Нажал "Назад"
 select_report --> generate_report : Нажал "Сформировать"
 generate_report --> export_reports : Отчет готов
 
@@ -114,25 +107,18 @@ task_management --> assign_task : Выбрал задачу → "Назначи�
 task_management --> view_task : Выбрал задачу → "Просмотреть"
 
 create_task --> task_management : Задача создана
-create_task --> task_management : Нажал "Назад"
 edit_task --> task_management : Изменения сохранены
-edit_task --> task_management : Нажал "Назад"
 assign_task --> task_management : Задача назначена
-view_task --> task_management : Нажал "Назад"
 
 route_management --> create_route : Нажал "Создать маршрут"
-create_route --> optimize_route : Введены точки маршрута
-create_route --> route_management : Нажал "Назад"
-optimize_route --> assign_route : Маршрут оптимизирован
+create_route --> assign_route: Введены точки маршрута
 assign_route --> route_management : Маршрут назначен
 
 schedule_management --> create_schedule : Нажал "Создать расписание"
 create_schedule --> edit_schedule : Базовое расписание создано
-create_schedule --> schedule_management : Нажал "Назад"
 edit_schedule --> assign_vehicle : Расписание настроено
 assign_vehicle --> schedule_management : Автомобиль закреплен
 
-view_map --> dispatcher_dashboard : Нажал "Назад"
 
 ' Переходы водителя
 driver_dashboard --> my_tasks : Нажал "Мои задачи"
@@ -140,17 +126,15 @@ driver_dashboard --> my_schedule : Нажал "Мое расписание"
 driver_dashboard --> add_vehicle : Нажал "Добавить авто"
 driver_dashboard --> view_route_on_map : Нажал "Текущий маршрут"
 
-my_tasks --> view_my_tasks : Автоматический переход
-view_my_tasks --> start_task : Выбрал задачу → "Начать"
-view_my_tasks --> report_incident : Нажал "Сообщить об инциденте"
+my_tasks --> start_task : Выбрал задачу → "Начать"
+my_tasks --> report_incident : Нажал "Сообщить об инциденте"
 
 start_task --> execute_task : Задача начата
 execute_task --> complete_task : Нажал "Завершить"
-complete_task --> view_my_tasks : Задача завершена
-report_incident --> view_my_tasks : Инцидент зарегистрирован
+complete_task --> my_tasks : Задача завершена
+report_incident --> my_tasks : Инцидент зарегистрирован
 
 my_schedule --> view_schedule : Автоматический переход
-view_schedule --> driver_dashboard : Нажал "Назад"
 
 add_vehicle --> input_vehicle_data : Начало добавления
 input_vehicle_data --> check_vin : Введены данные авто
@@ -159,20 +143,16 @@ check_vin --> vehicle_status : VIN валиден, авто добавлено
 vehicle_status --> driver_dashboard : Нажал "Готово"
 vehicle_error --> add_vehicle : Нажал "Повторить"
 
-view_route_on_map --> driver_dashboard : Нажал "Назад"
-
 ' Переходы тех. персонала
 tech_dashboard --> maintenance : Нажал "Тех. обслуживание"
 tech_dashboard --> write_off_vehicle : Нажал "Списание авто"
 
-maintenance --> maintenance_list : Автоматический переход
-maintenance_list --> plan_maintenance : Нажал "Запланировать ТО"
+maintenance --> plan_maintenance : Нажал "Запланировать ТО"
 plan_maintenance --> create_maintenance_request : Выбрал авто и дату
 create_maintenance_request --> perform_maintenance : Заявка создана
 perform_maintenance --> mark_completed : ТО выполнено
-mark_completed --> maintenance_list : Отмечено как выполненное
-maintenance_list --> maintenance_history : Нажал "История"
-maintenance_history --> maintenance_list : Нажал "Назад"
+mark_completed --> maintenance : Отмечено как выполненное
+maintenance --> maintenance_history : Нажал "История"
 
 write_off_vehicle --> write_off_reason : Выбор автомобиля
 write_off_reason --> confirm_write_off : Указана причина
@@ -182,17 +162,32 @@ confirm_write_off --> tech_dashboard : Автомобиль списан\n(не 
 user_management --> admin_dashboard : Нажал "Назад"
 export_reports --> admin_dashboard : Нажал "Назад"
 account_settings --> admin_dashboard : Нажал "Назад"
+edit_user --> user_management : Нажал "Назад"
+input_user_data --> user_management : Нажал "Назад"
+delete_user --> user_management : Нажал "Назад"
+select_report --> export_reports : Нажал "Назад"
 
 task_management --> dispatcher_dashboard : Нажал "Назад"
 route_management --> dispatcher_dashboard : Нажал "Назад"
 schedule_management --> dispatcher_dashboard : Нажал "Назад"
+create_task --> task_management : Нажал "Назад"
+edit_task --> task_management : Нажал "Назад"
+view_task --> task_management : Нажал "Назад"
+create_route --> route_management : Нажал "Назад"
+create_schedule --> schedule_management : Нажал "Назад"
+view_map --> dispatcher_dashboard : Нажал "Назад"
 
 my_tasks --> driver_dashboard : Нажал "Назад"
 my_schedule --> driver_dashboard : Нажал "Назад"
 add_vehicle --> driver_dashboard : Нажал "Отмена"
+view_schedule --> driver_dashboard : Нажал "Назад"
+view_route_on_map --> driver_dashboard : Нажал "Назад"
 
 maintenance --> tech_dashboard : Нажал "Назад"
 write_off_vehicle --> tech_dashboard : Нажал "Отмена"
+plan_maintenance --> maintenance : Нажал "Назад"
+create_maintenance_request --> maintenance : Нажал "Назад"
+maintenance_history --> maintenance : Нажал "Назад"
 
 ' Возврат на дашборд при разлогине
 admin_dashboard --> login : Выход из системы
