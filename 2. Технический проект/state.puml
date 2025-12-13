@@ -123,7 +123,7 @@ assign_vehicle --> schedule_management : Автомобиль закреплен
 ' Переходы водителя
 driver_dashboard --> my_tasks : Нажал "Мои задачи"
 driver_dashboard --> my_schedule : Нажал "Мое расписание"
-driver_dashboard --> add_vehicle : Нажал "Добавить авто"
+admin_dashboard --> add_vehicle : Нажал "Добавить авто"
 driver_dashboard --> view_route_on_map : Нажал "Текущий маршрут"
 
 my_tasks --> start_task : Выбрал задачу → "Начать"
@@ -140,7 +140,6 @@ add_vehicle --> input_vehicle_data : Начало добавления
 input_vehicle_data --> check_vin : Введены данные авто
 check_vin --> vehicle_error : VIN не прошел проверку
 check_vin --> vehicle_status : VIN валиден, авто добавлено
-vehicle_status --> driver_dashboard : Нажал "Готово"
 vehicle_error --> add_vehicle : Нажал "Повторить"
 
 ' Переходы тех. персонала
@@ -179,7 +178,7 @@ view_map --> dispatcher_dashboard : Нажал "Назад"
 
 my_tasks --> driver_dashboard : Нажал "Назад"
 my_schedule --> driver_dashboard : Нажал "Назад"
-add_vehicle --> driver_dashboard : Нажал "Отмена"
+add_vehicle --> admin_dashboard : Нажал "Отмена"
 view_schedule --> driver_dashboard : Нажал "Назад"
 view_route_on_map --> driver_dashboard : Нажал "Назад"
 
