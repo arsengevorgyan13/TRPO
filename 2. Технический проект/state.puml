@@ -16,7 +16,6 @@ state "Ввод данных пользователя" as input_user_data
 state "Проверка водительских данных" as check_driver_license
 state "Редактирование пользователя" as edit_user
 state "Удаление пользователя" as delete_user
-' state "Подтверждение удаления" as confirm_deletion
 state "Выгрузка отчетов" as export_reports
 state "Выбор типа отчета" as select_report
 state "Формирование отчета" as generate_report
@@ -39,12 +38,11 @@ state "Просмотр карты" as view_map
 
 ' Состояния водителя
 state "Мои задачи" as my_tasks
-state "Начало выполнения задаче" as start_task
+state "Начало выполнения задачи" as start_task
 state "Выполнение задачи" as execute_task
 state "Завершение задачи" as complete_task
 state "Сообщение об инциденте" as report_incident
 state "Мое расписание" as my_schedule
-state "Просмотр расписания" as view_schedule
 state "Маршрут на карте" as view_route_on_map
 state "Добавление автомобиля" as add_vehicle
 state "Ввод данных автомобиля" as input_vehicle_data
@@ -134,8 +132,6 @@ execute_task --> complete_task : Нажал "Завершить"
 complete_task --> my_tasks : Задача завершена
 report_incident --> my_tasks : Инцидент зарегистрирован
 
-my_schedule --> view_schedule : Автоматический переход
-
 add_vehicle --> input_vehicle_data : Начало добавления
 input_vehicle_data --> check_vin : Введены данные авто
 check_vin --> vehicle_error : VIN не прошел проверку
@@ -179,7 +175,6 @@ view_map --> dispatcher_dashboard : Нажал "Назад"
 my_tasks --> driver_dashboard : Нажал "Назад"
 my_schedule --> driver_dashboard : Нажал "Назад"
 add_vehicle --> admin_dashboard : Нажал "Отмена"
-view_schedule --> driver_dashboard : Нажал "Назад"
 view_route_on_map --> driver_dashboard : Нажал "Назад"
 
 maintenance --> tech_dashboard : Нажал "Назад"
@@ -193,4 +188,24 @@ admin_dashboard --> login : Выход из системы
 dispatcher_dashboard --> login : Выход из системы
 driver_dashboard --> login : Выход из системы
 tech_dashboard --> login : Выход из системы
+
+' Переходы в конечное состояние
+generate_report --> [*]
+vehicle_error --> [*]
+vehicle_status --> [*]
+input_user_data --> [*]
+check_driver_license --> [*]
+delete_user --> [*]
+edit_task --> [*]
+assign_task --> [*]
+assign_route --> [*]
+complete_task --> [*]
+view_task --> [*]
+edit_schedule --> [*]
+assign_vehicle --> [*]
+create_task --> [*]
+report_incident --> [*]
+confirm_write_off --> [*]
+mark_completed --> [*]
+maintenance_history --> [*]
 @enduml
