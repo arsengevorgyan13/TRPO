@@ -4,19 +4,19 @@ left to right direction
 
 title C4 Infrastructure Deployment Diagram - Система управления автопарком
 
-Deployment_Node(public_internet, "Public Internet", "Глобальная сеть") {
+Deployment_Node(public_internet, "Public Internet") {
     Container(dns, "DNS Service", "DNS", "Разрешение доменных имен")
     Container(spa_client, "WEB SPA", "React Native", "Единое SPA приложение для всех ролей")
     Container(external_gps, "GPS Trackers", "External Hardware", "GPS-данные от устройств слежения")
     Container(gibdd_api, "ГИБДД API", "External Government API", "Проверка VIN/водительских удостоверений")
 }
 
-Deployment_Node(k8s_cluster, "Kubernetes Cluster", "Production Cluster - 5 нод") {
+Deployment_Node(k8s_cluster, "Kubernetes Cluster") {
     Deployment_Node(gateway_layer, "Gateway Layer", "Ingress + API Gateway") {
         Container(envoy_gateway, "Envoy Proxy", "API Gateway", "Маршрутизация, аутентификация, rate limiting, балансировка")
     }
 
-    Deployment_Node(worker_node_1, "Worker Node 1", "k8s-node-1") {
+    Deployment_Node(worker_node_1, "Worker Node 1") {
         Container(auth_service_pod1, "Authentication Service", "Go", "replica 1/3")
         Container(centrifugo_pod1, "Centrifugo", "Go", "replica 1/3")
         Container(account_service_pod1, "Account Service", "Go", "replica 1/3")
@@ -29,7 +29,7 @@ Deployment_Node(k8s_cluster, "Kubernetes Cluster", "Production Cluster - 5 но�
         Container(reports_service_pod1, "Reports Service", "Go", "replica 1/3")
     }
 
-    Deployment_Node(worker_node_2, "Worker Node 2", "k8s-node-2") {
+    Deployment_Node(worker_node_2, "Worker Node 2") {
         Container(auth_service_pod2, "Authentication Service", "Go", "replica 2/3")
         Container(centrifugo_pod2, "Centrifugo", "Go", "replica 2/3")
         Container(account_service_pod2, "Account Service", "Go", "replica 2/3")
@@ -42,7 +42,7 @@ Deployment_Node(k8s_cluster, "Kubernetes Cluster", "Production Cluster - 5 но�
         Container(reports_service_pod2, "Reports Service", "Go", "replica 2/3")
     }
 
-    Deployment_Node(worker_node_3, "Worker Node 3", "k8s-node-3") {
+    Deployment_Node(worker_node_3, "Worker Node 3") {
         Container(auth_service_pod3, "Authentication Service", "Go", "replica 3/3")
         Container(centrifugo_pod3, "Centrifugo", "Go", "replica 3/3")
         Container(account_service_pod3, "Account Service", "Go", "replica 3/3")
@@ -55,30 +55,30 @@ Deployment_Node(k8s_cluster, "Kubernetes Cluster", "Production Cluster - 5 но�
         Container(reports_service_pod3, "Reports Service", "Go", "replica 3/3")
     }
 
-    Deployment_Node(stateful_node_4, "Stateful Node 4", "k8s-node-4") {
+    Deployment_Node(stateful_node_4, "Stateful Node 4") {
         Container(rabbitmq_node1, "RabbitMQ Node 1", "RabbitMQ", "cluster node 1/3")
         Container(rabbitmq_node2, "RabbitMQ Node 2", "RabbitMQ", "cluster node 2/3")
         Container(rabbitmq_node3, "RabbitMQ Node 3", "RabbitMQ", "cluster node 3/3")
     }
 
-    Deployment_Node(stateful_node_5, "Stateful Node 5", "k8s-node-5") {
+    Deployment_Node(stateful_node_5, "Stateful Node 5") {
         Container(redis_master1, "Redis Master 1", "Redis", "primary node")
-        Container(redis_slave1, "Redis Slave 1", "Redis", "replica node")
+        Container(redis_slave1, "Redis Slave 1..n", "Redis", "replica node")
         Container(redis_sentinel, "Redis Sentinel", "Redis", "мониторинг и failover")
     }
 }
 
-Deployment_Node(db_datacenter, "Database Datacenter", "Выделенный дата-центр БД") {
-    Deployment_Node(postgres_cluster, "PostgreSQL Cluster", "High Availability Cluster") {
-        ContainerDb(postgres_master, "PostgreSQL Master", "PostgreSQL", "Основная БД для записи | db-node-1")
+Deployment_Node(db_datacenter, "Database Datacenter") {
+    Deployment_Node(postgres_cluster, "PostgreSQL Cluster") {
+        ContainerDb(postgres_master, "PostgreSQL Master", "PostgreSQL", "Основная БД для записи")
 
         Deployment_Node(db_node_2, "Database Node 2", "Физический сервер") {
-            ContainerDb(postgres_slave1, "PostgreSQL Slave 1", "PostgreSQL", "Реплика для чтения | db-node-2")
+            ContainerDb(postgres_slave1, "PostgreSQL Slave 1", "PostgreSQL", "Реплика для чтения")
         }
     }
 }
 
-Deployment_Node(monitoring_namespace, "Monitoring Namespace", "Отдельный namespace в Kubernetes") {
+Deployment_Node(monitoring_namespace, "Monitoring Namespace") {
     Container(prometheus, "Prometheus", "Prometheus", "Сбор метрик и мониторинг")
     Container(grafana, "Grafana", "Grafana", "Визуализация метрик и дашборды")
     Container(kibana, "Kibana", "Kibana", "Анализ логов")
