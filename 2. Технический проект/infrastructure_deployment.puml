@@ -1,0 +1,136 @@
+@startuml C4 Infrastructure Deployment Diagram - Система управления автопарком
+left to right direction
+!include lib/C4_Container.puml
+!include lib/C4_Component.puml
+
+title C4 Infrastructure Deployment Diagram - Система управления автопарком
+
+package "Public Internet" as internet {
+    Container(dns, "DNS Service", "Разрешение доменных имен")
+
+    Container(spa_client, "WEB SPA", "React Native") {
+        Component(admin_panel, "Admin Panel")
+        Component(manager_panel, "Dispatcher Panel")
+        Component(tech_panel, "Technical Panel")
+		Component(driver_ui, "Driver Panel")
+    }
+
+    Container(external_gps, "GPS Trackers", "GPS-данные")
+    Container(gibdd_api, "ГИБДД API", "External Government API", "Проверка VIN/водительских удостоверений")
+}
+
+package "Kubernetes Cluster" as k8s_primary {
+    package "Gateway" as api_gateway {
+        Container(envoy_gateway, "Envoy Proxy", "API Gateway", "Маршрутизация, аутентификация, rate limiting, балансировка") {
+            Component(http_router, "HTTP Router", "Envoy")
+            Component(grpc_router, "gRPC Router", "Envoy")
+            Component(auth_filter, "Auth Filter", "Envoy")
+        }
+    }
+
+    package "Microservices" as microservices {
+		Container(auth_service, "Authentication Service", "Go", "Аутентификация, сессии, токены")
+		Container(centrifugo, "Centrifugo", "Go", "Real-time сервер для WebSocket")
+
+		Container(account_service, "Account Service", "Go", "Управление аккаунтами компаний, подписки")
+		Container(user_service, "User Service", "Go", "Управление пользователями, роли, права")
+		Container(car_service, "Car Service", "Go", "Управление автомобилями, характеристики")
+		Container(routing_service, "Routing Service", "Go", "Планирование и оптимизация маршрутов")
+		Container(scheduling_service, "Scheduling Service", "Go", "Расписания и задачи водителей")
+		Container(notifications_service, "Notifications Service", "Go", "Уведомления, push, email, SMS")
+		Container(maintenance_service, "Maintenance Service", "Go", "Техническое обслуживание, ТО")
+		Container(reports_service, "Reports Service", "Go", "Генерация отчетов, аналитика")
+    }
+
+    package "Message Broker" as message_broker {
+        Container(rabbitmq_cluster, "RabbitMQ Cluster", "Message Broker", "Асинхронная обработка, очереди") {
+            Component(rabbitmq_node1, "RabbitMQ Node 1", "RabbitMQ")
+            Component(rabbitmq_nodeN, "RabbitMQ Node N", "RabbitMQ")
+        }
+    }
+
+    package "Caching" as caching {
+        Container(redis_cluster, "Redis Cluster", "In-memory Cache", "Кеширование данных, сессии")
+        Container(redis_sentinel, "Redis Sentinel", "Мониторинг Redis")
+    }
+
+    package "Database Cluster" as db_cluster {
+        package "PostgreSQL Cluster" as postgres_cluster {
+            Container(postgres_master, "PostgreSQL Master", "SQL Database", "Основная БД для записи")
+            Container(postgres_slave1, "PostgreSQL Slave 1", "SQL Database", "Реплика для чтения")
+        }
+    }
+
+    package "Monitoring" as monitoring {
+        Container(prometheus, "Prometheus", "Monitoring", "Сбор метрик и мониторинг") {
+            Component(metrics_collector, "Metrics Collector", "Prometheus")
+            Component(alert_manager, "Alert Manager", "Prometheus")
+        }
+
+        Container(grafana, "Grafana", "Dashboard", "Визуализация метрик и дашборды")
+
+        Container(kibana, "Kibana", "Log Visualization", "Анализ логов")
+    }
+}
+
+Rel(dns, spa_client, "DNS Resolution")
+Rel(spa_client, external_gps, "Получение GPS-данных")
+Rel(spa_client, envoy_gateway, "API запросы")
+
+Rel(envoy_gateway, account_service, "gRPC")
+Rel(envoy_gateway, auth_service, "gRPC")
+Rel(envoy_gateway, user_service, "gRPC")
+Rel(envoy_gateway, car_service, "gRPC")
+Rel(envoy_gateway, routing_service, "gRPC")
+Rel(envoy_gateway, scheduling_service, "gRPC")
+Rel(envoy_gateway, notifications_service, "gRPC")
+Rel(envoy_gateway, maintenance_service, "gRPC")
+Rel(envoy_gateway, reports_service, "gRPC")
+Rel(envoy_gateway, centrifugo, "WebSocket")
+
+Rel(redis_sentinel, redis_cluster, "")
+
+Rel(rabbitmq_cluster, notifications_service, "Уведомления", "AMQP")
+Rel(rabbitmq_cluster, scheduling_service, "Обновления маршрутов", "AMQP")
+Rel(rabbitmq_cluster, reports_service, "Обновления данных", "AMQP")
+
+Rel(auth_service, redis_cluster, "Сессии пользователей", "RESP")
+
+Rel(account_service, postgres_master, "Запись конфигураций", "PostgreSQL")
+
+Rel(user_service, gibdd_api, "Проверка водительских прав", "HTTPS")
+Rel(user_service, postgres_master, "Запись пользователей", "PostgreSQL")
+Rel(user_service, redis_cluster, "Кеш профилей", "RESP")
+Rel(user_service, rabbitmq_cluster, "События пользователей", "AMQP")
+
+Rel(car_service, gibdd_api, "Проверка VIN", "HTTPS")
+Rel(car_service, postgres_master, "Запись автомобилей", "PostgreSQL")
+Rel(car_service, redis_cluster, "Кеш автомобилей", "RESP")
+Rel(car_service, rabbitmq_cluster, "События автомобилей", "AMQP")
+
+Rel(scheduling_service, user_service, "Получение данных пользователей", "gRPC")
+Rel(scheduling_service, routing_service, "Получение маршрутов", "gRPC")
+Rel(scheduling_service, postgres_master, "Запись расписаний", "PostgreSQL")
+Rel(scheduling_service, rabbitmq_cluster, "События расписаний", "AMQP")
+
+Rel(routing_service, car_service, "Получение данных транспорта", "gRPC")
+Rel(routing_service, postgres_master, "Запись маршрутов", "PostgreSQL")
+Rel(routing_service, redis_cluster, "Кеш маршрутов", "RESP")
+Rel(routing_service, rabbitmq_cluster, "События маршрутов", "AMQP")
+
+Rel(notifications_service, user_service, "Получение пользовательских настроек", "gRPC")
+Rel(notifications_service, centrifugo, "Отправка WebSocket уведомлений", "HTTP")
+
+Rel(maintenance_service, postgres_master, "Запись ТО", "PostgreSQL")
+Rel(maintenance_service, rabbitmq_cluster, "События ТО", "AMQP")
+
+Rel(reports_service, redis_cluster, "Кеш отчетов", "RESP")
+Rel(reports_service, postgres_slave1, "Чтение для отчетов", "PostgreSQL")
+
+Rel(monitoring, microservices, "Мониторинг")
+Rel(monitoring, db_cluster, "Мониторинг")
+Rel(monitoring, rabbitmq_cluster, "Мониторинг")
+Rel(monitoring, redis_sentinel, "Мониторинг")
+Rel(monitoring, api_gateway, "Мониторинг")
+
+@enduml
