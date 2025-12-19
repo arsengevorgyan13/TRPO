@@ -1,0 +1,128 @@
+@startuml Система управления автопарком - Maintenance Deployment Diagram
+title Maintenance Deployment Diagram - Система управления автопарком
+left to right direction
+skinparam nodesep 30
+skinparam ranksep 40
+
+package "Development Environment" {
+  node developer_laptop [
+    **Компьютер разработчика**
+    Локальная разработка
+    и тестирование
+  ]
+}
+
+node gitlab_node [
+  **GitLab**
+  Хранение репозиториев
+  Версии кода
+]
+
+package "CI/CD Pipeline" {
+  node teamcity [
+    **TeamCity**
+    CI/CD сервер
+    Пайплайны сборки
+  ]
+
+  node harbor [
+    **Harbor Registry**
+    Docker Registry
+    Сканирование уязвимостей
+  ]
+}
+
+package "Test Environment" <<Rectangle>> {
+  node test_envs [
+    **Тестовые окружения**
+    ----
+    • Ручное тестирование
+    • Автоматические тесты
+    • Сканирование ИБ
+  ]
+
+  node qa_engineers [
+    **QA инженеры**
+  ]
+
+  node auto_tests [
+    **Автотесты**
+    Unit, интеграционные
+    Линтеры
+  ]
+}
+
+node stage_env [
+  **Stage окружение**
+  ----
+  • Финальное тестирование
+  • Проверка конфигураций
+]
+
+package "Production Environment" <<Rectangle>> {
+  node prod_env [
+    **Production**
+    Kubernetes Cluster
+    ----
+    • Rolling deployment
+    • Blue/Green готовность
+    • Автоматический откат
+  ]
+}
+
+package "Monitoring & Observability" <<Rectangle>> {
+  node prometheus [
+    **Prometheus**
+    Сбор метрик
+    Мониторинг
+  ]
+
+  node grafana [
+    **Grafana**
+    Дашборды
+    Визуализация метрик
+  ]
+
+  node kibana [
+    **Kibana**
+    Анализ логов
+    Поиск по логам
+  ]
+
+  node alerting [
+    **Alerting System**
+    Автоматические алерты
+    Telegram
+  ]
+}
+
+developer_laptop --> gitlab_node : "git commit & push"
+gitlab_node --> teamcity : "Триггер билда"
+
+teamcity --> teamcity : "1. Сборка кода\n2. Запуск Unit тестов\n3. Прогон линтеров\n4. Сборка Docker образов\n5. Интеграционные тесты"
+teamcity --> harbor : "Push Docker образов\nс тегами версий"
+
+harbor --> test_envs : "Deploy образов\nна тестовые среды"
+test_envs --> qa_engineers : "Ручное тестирование\nи валидация"
+test_envs --> auto_tests : "Запуск автоматических\nрегрессионных тестов"
+
+test_envs --> stage_env : "Продвижение успешных сборок на stage"
+stage_env --> stage_env : "\n\n\n\n\n\nФинальные проверки:\n• Конфигурации\n• Интеграции\n• Производительность"
+
+stage_env --> prod_env : "Rolling deployment поэтапный rollout"
+
+test_envs --> prometheus : "Экспорт метрик"
+stage_env --> prometheus : "Экспорт метрик"
+prod_env --> prometheus : "Экспорт метрик\nи состояния"
+
+prometheus --> grafana : "Данные для визуализации"
+prod_env --> kibana : "Отправка логов\nприложений"
+prometheus --> alerting : "Триггеры алертов\nпо метрикам"
+
+alerting --> teamcity : "Автооткат при\nкритических алертах"
+qa_engineers --> teamcity : "Ручной откат через\nTeamCity интерфейс"
+
+harbor --> developer_laptop : "Pull образов для\nлокальной разработки"
+prod_env --> prod_env : "\nHealth checks и self-healing"
+
+@enduml
